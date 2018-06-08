@@ -38,10 +38,11 @@ $TEST_NGINX_USER
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
   lua_shared_dict test_counts 128k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -79,6 +80,8 @@ $TEST_NGINX_USER
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -170,7 +173,7 @@ $TEST_NGINX_USER
       ngx.say("Successes: ", ngx.shared.test_counts:get("successes"))
     }
   }
---- timeout: 30s
+--- timeout: 120s
 --- request
 GET /t
 --- response_body

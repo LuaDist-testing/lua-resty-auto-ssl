@@ -10,7 +10,7 @@ my $redis = Expect->spawn("redis-server ./t/config/redis.conf") or die "failed t
 $redis->log_stdout(0);
 $redis->expect(10, "now ready") or die "failed to start redis: " . $redis->exp_before();
 
-repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 7 + 5);
 
@@ -26,9 +26,10 @@ __DATA__
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -72,6 +73,8 @@ __DATA__
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -158,9 +161,10 @@ auto-ssl: issuing new certificate for
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -205,6 +209,8 @@ auto-ssl: issuing new certificate for
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -287,9 +293,10 @@ issuing new certificate for
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -334,6 +341,8 @@ issuing new certificate for
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -420,9 +429,10 @@ dehydrated succeeded, but certs still missing from storage
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.redis",
@@ -468,6 +478,8 @@ dehydrated succeeded, but certs still missing from storage
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()

@@ -49,6 +49,10 @@ http {
   # hold your certificate data. 1MB of storage holds certificates for
   # approximately 100 separate domains.
   lua_shared_dict auto_ssl 1m;
+  # The "auto_ssl" shared dict is used to temporarily store various settings
+  # like the secret used by the hook server on port 8999. Do not change or
+  # omit it.
+  lua_shared_dict auto_ssl_settings 64k;
 
   # A DNS resolver must be defined for OCSP stapling to function.
   #
@@ -112,6 +116,12 @@ http {
   # Internal server running on port 8999 for handling certificate tasks.
   server {
     listen 127.0.0.1:8999;
+
+    # Increase the body buffer size, to ensure the internal POSTs can always
+    # parse the full POST contents into memory.
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
+
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -290,6 +300,8 @@ After checking out the repo, Docker can be used to run the test suite:
 ```sh
 $ docker-compose run app make test
 ```
+
+The test suite is implemented using nginx' [`Test::Nginx`](https://metacpan.org/pod/Test::Nginx::Socket) cpan module.
 
 ## Credits
 

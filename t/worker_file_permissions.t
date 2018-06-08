@@ -8,7 +8,7 @@ my ($nobody_user, $nobody_passwd, $nobody_uid, $nobody_gid) = getpwnam "nobody";
 $ENV{TEST_NGINX_NOBODY_USER} = $nobody_user;
 $ENV{TEST_NGINX_NOBODY_GROUP} = getgrgid($nobody_gid);
 
-repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 7);
 
@@ -28,9 +28,10 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       storage_adapter = "resty.auto-ssl.storage_adapters.file",
@@ -71,6 +72,8 @@ user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()

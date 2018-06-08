@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 require "./t/inc/setup.pl";
 AutoSsl::setup();
 
-repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 6 + 10);
 
@@ -20,9 +20,10 @@ __DATA__
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -62,6 +63,8 @@ __DATA__
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -132,9 +135,10 @@ auto-ssl: issuing new certificate for
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -174,6 +178,8 @@ auto-ssl: issuing new certificate for
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -244,9 +250,10 @@ issuing new certificate for
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -286,6 +293,8 @@ issuing new certificate for
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -350,9 +359,10 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
     })
@@ -389,6 +399,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -453,9 +465,10 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -500,6 +513,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -565,9 +580,10 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new()
+    auto_ssl = (require "resty.auto-ssl").new()
     auto_ssl:set("dir", "$TEST_NGINX_RESTY_AUTO_SSL_DIR")
     auto_ssl:set("ca", "https://acme-staging.api.letsencrypt.org/directory")
     auto_ssl:set("allow_domain", function(domain)
@@ -611,6 +627,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -676,9 +694,10 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -718,6 +737,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -784,9 +805,10 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -826,6 +848,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -892,9 +916,10 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       request_domain = function(ssl, ssl_options)
@@ -976,6 +1001,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -1051,9 +1078,10 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       ca = "https://acme-staging.api.letsencrypt.org/directory",
       allow_domain = function(domain)
@@ -1093,6 +1121,8 @@ lua ssl certificate verify error: (18: self signed certificate)
 
   server {
     listen 127.0.0.1:8999;
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
     location / {
       content_by_lua_block {
         auto_ssl:hook_server()
@@ -1171,9 +1201,10 @@ auto-ssl: dehydrated succeeded, but certs still missing from storage - trying to
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
+  lua_shared_dict auto_ssl_settings 64k;
 
   init_by_lua_block {
-    auto_ssl = (require "lib.resty.auto-ssl").new({
+    auto_ssl = (require "resty.auto-ssl").new({
       dir = "$TEST_NGINX_RESTY_AUTO_SSL_DIR",
       hook_server_port = 9888,
       ca = "https://acme-staging.api.letsencrypt.org/directory",

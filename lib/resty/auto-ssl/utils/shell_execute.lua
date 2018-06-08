@@ -6,17 +6,18 @@ return function(command)
   -- (since it's started by only a single worker in init_worker, it's possible
   -- other workers have already finished their init_worker phases before the
   -- process is actually started).
-  if not ngx.shared.auto_ssl:get("sockproc_started") then
+  if not ngx.shared.auto_ssl_settings:get("sockproc_started") then
     start_sockproc()
 
     local wait_time = 0
     local sleep_time = 0.01
     local max_time = 5
-    while not ngx.shared.auto_ssl:get("sockproc_started") do
+    while not ngx.shared.auto_ssl_settings:get("sockproc_started") do
       ngx.sleep(sleep_time)
       wait_time = wait_time + sleep_time
 
       if wait_time > max_time then
+        ngx.log(ngx.ERR, "auto-ssl: sockproc did not start in expected amount of time")
         break
       end
     end
