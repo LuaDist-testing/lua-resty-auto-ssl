@@ -1,9 +1,12 @@
+use strict;
+use warnings;
 use Test::Nginx::Socket::Lua;
-do "./t/inc/setup.pl" or die "Setup failed: $@";
+require "./t/inc/setup.pl";
+AutoSsl::setup();
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 6 + 10);
+plan tests => repeat_each() * (blocks() * 7 + 3);
 
 check_accum_error_log();
 no_long_string();
@@ -125,6 +128,7 @@ received: foo
 --- error_log
 auto-ssl: issuing new certificate for
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]
@@ -240,6 +244,7 @@ received:
 received: foo
 --- error_log
 --- no_error_log
+[warn]
 [error]
 [alert]
 [emerg]

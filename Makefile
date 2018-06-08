@@ -41,6 +41,7 @@ install:
 	install -d $(INST_LUADIR)/resty/auto-ssl/utils
 	install -m 644 lib/resty/auto-ssl/utils/shell_execute.lua $(INST_LUADIR)/resty/auto-ssl/utils/shell_execute.lua
 	install -m 644 lib/resty/auto-ssl/utils/start_sockproc.lua $(INST_LUADIR)/resty/auto-ssl/utils/start_sockproc.lua
+	install -m 644 lib/resty/auto-ssl/utils/run_command.lua $(INST_LUADIR)/resty/auto-ssl/utils/run_command.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/vendor
 	install -m 755 lib/resty/auto-ssl/vendor/letsencrypt.sh $(INST_LUADIR)/resty/auto-ssl/vendor/letsencrypt.sh
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
@@ -82,12 +83,12 @@ TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
 PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luajit/bin:$(PATH)
 
 LUACHECK:=luacheck
-LUACHECK_VERSION:=0.15.0-1
+LUACHECK_VERSION:=0.15.1-1
 
 OPENSSL_VERSION:=1.0.2h
 OPENSSL:=openssl-$(OPENSSL_VERSION)
 
-OPENRESTY_VERSION:=1.9.7.5
+OPENRESTY_VERSION:=1.9.15.1
 OPENRESTY:=openresty-$(OPENRESTY_VERSION)
 
 LUAROCKS_VERSION=2.3.0
@@ -115,21 +116,19 @@ $(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): $(TEST_TMP_DIR)/$(LUAROCKS
 $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	curl -o $@ -L http://cpanmin.us
 	chmod +x $@
-	touch $@
+	touch -c $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Expect.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest Expect
-	chmod u+w $@
-	touch $@
-
-$(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest File::Slurp
-	chmod u+w $@
-	touch $@
+	$< -L $(TEST_BUILD_DIR) --reinstall --notest Expect@1.33
+	touch -c $@
 
 $(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm: $(TEST_TMP_DIR)/cpanm
-	$< -L $(TEST_BUILD_DIR) --notest Test::Nginx@0.25
-	chmod u+w $@
+	$< -L $(TEST_BUILD_DIR) --reinstall --notest Test::Nginx@0.25
+	touch -c $@
+
+# Runtime dependency for Expect.pm
+$(TEST_BUILD_DIR)/stamp-IO-Tty-1.12: $(TEST_TMP_DIR)/cpanm
+	$< -L $(TEST_BUILD_DIR) --reinstall --notest IO::Tty@1.12
 	touch $@
 
 UNAME := $(shell uname)
@@ -151,7 +150,7 @@ $(TEST_TMP_DIR)/$(OPENSSL): | $(TEST_TMP_DIR)
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENSSL).tar.gz
 
 $(TEST_TMP_DIR)/$(OPENRESTY)/.installed: $(TEST_TMP_DIR)/$(OPENSSL) | $(TEST_TMP_DIR)
-	cd $(TEST_TMP_DIR) && rm -rf ngx_openresty*
+	cd $(TEST_TMP_DIR) && rm -rf openresty*
 	cd $(TEST_TMP_DIR) && curl -L -O https://openresty.org/download/$(OPENRESTY).tar.gz
 	cd $(TEST_TMP_DIR) && tar -xf $(OPENRESTY).tar.gz
 	cd $(TEST_TMP_DIR)/$(OPENRESTY) && ./configure --prefix=$(TEST_BUILD_DIR) --with-debug --with-openssl=$(TEST_TMP_DIR)/$(OPENSSL)
@@ -167,7 +166,7 @@ $(TEST_TMP_DIR)/$(LUAROCKS)/.installed: $(TEST_TMP_DIR)/$(OPENRESTY)/.installed 
 		--prefix=$(TEST_BUILD_DIR)/luajit \
 		--with-lua=$(TEST_BUILD_DIR)/luajit \
 		--with-lua-include=$(TEST_BUILD_DIR)/luajit/include/luajit-2.1 \
-		--lua-suffix=jit-2.1.0-beta1
+		--lua-suffix=jit-2.1.0-beta2
 	cd $(TEST_TMP_DIR)/$(LUAROCKS) && make bootstrap
 	touch $@
 
@@ -177,15 +176,21 @@ test_dependencies: \
 	$(TEST_TMP_DIR)/$(OPENRESTY)/.installed \
 	$(TEST_TMP_DIR)/$(LUAROCKS)/.installed \
 	$(TEST_BUILD_DIR)/lib/perl5/Expect.pm \
-	$(TEST_BUILD_DIR)/lib/perl5/File/Slurp.pm \
-	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm
+	$(TEST_BUILD_DIR)/lib/perl5/Test/Nginx.pm \
+	$(TEST_BUILD_DIR)/stamp-IO-Tty-1.12
 
 lint: test_dependencies
 	LUA_PATH="$(TEST_LUA_SHARE_DIR)/?.lua;$(TEST_LUA_SHARE_DIR)/?/init.lua;;" LUA_CPATH="$(TEST_LUA_LIB_DIR)/?.so;;" $(TEST_VENDOR_DIR)/bin/luacheck lib
 
 test: test_dependencies lint
 	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
-	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove
+	sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
+	sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
+	pkill sockproc || true
+	sudo pkill -U nobody sockproc || true
+	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(ROOT_DIR)/t/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove t/worker_file_permissions.t
+	sudo pkill -U nobody sockproc || true
+	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test
