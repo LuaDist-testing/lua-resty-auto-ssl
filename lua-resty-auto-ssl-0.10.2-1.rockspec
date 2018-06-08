@@ -1,16 +1,16 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "lua-resty-auto-ssl"
-version = "0.10.1-1"
+version = "0.10.2-1"
 -- LuaDist source
 source = {
-  tag = "0.10.1-1",
+  tag = "0.10.2-1",
   url = "git://github.com/LuaDist-testing/lua-resty-auto-ssl.git"
 }
 -- Original source
 -- source = {
 --   url = "git://github.com/GUI/lua-resty-auto-ssl.git",
---   tag = "v0.10.1",
+--   tag = "v0.10.2",
 -- }
 description = {
   summary = "Automatic SSL handling for OpenResty",
