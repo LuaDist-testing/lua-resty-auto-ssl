@@ -4,8 +4,9 @@ use Test::Nginx::Socket::Lua;
 require "./t/inc/setup.pl";
 AutoSsl::setup();
 
-my ($nobody_user, $nobody_passwd, $nobody_uid, $nobody_gid ) = getpwnam "nobody";
-$ENV{TEST_NGINX_NOBODY_GROUP} = getgrgid $nobody_gid;
+my ($nobody_user, $nobody_passwd, $nobody_uid, $nobody_gid) = getpwnam "nobody";
+$ENV{TEST_NGINX_NOBODY_USER} = $nobody_user;
+$ENV{TEST_NGINX_NOBODY_GROUP} = getgrgid($nobody_gid);
 
 repeat_each(2);
 
@@ -23,7 +24,7 @@ __DATA__
 
 === TEST 1: issues a new SSL certificate and stores it as a file
 --- main_config
-user nobody $TEST_NGINX_NOBODY_GROUP;
+user $TEST_NGINX_NOBODY_USER $TEST_NGINX_NOBODY_GROUP;
 --- http_config
   resolver $TEST_NGINX_RESOLVER;
   lua_shared_dict auto_ssl 1m;
@@ -46,8 +47,8 @@ user nobody $TEST_NGINX_NOBODY_GROUP;
 
   server {
     listen 9443 ssl;
-    ssl_certificate ../../certs/example_fallback.crt;
-    ssl_certificate_key ../../certs/example_fallback.key;
+    ssl_certificate $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.crt;
+    ssl_certificate_key $TEST_NGINX_ROOT_DIR/t/certs/example_fallback.key;
     ssl_certificate_by_lua_block {
       auto_ssl:ssl_certificate()
     }
@@ -77,10 +78,11 @@ user nobody $TEST_NGINX_NOBODY_GROUP;
     }
   }
 --- config
-  lua_ssl_trusted_certificate ../../certs/letsencrypt_staging_chain.pem;
+  lua_ssl_trusted_certificate $TEST_NGINX_ROOT_DIR/t/certs/letsencrypt_staging_chain.pem;
   lua_ssl_verify_depth 5;
   location /t {
     content_by_lua_block {
+      local ngx_re = require "ngx.re"
       local run_command = require "resty.auto-ssl.utils.run_command"
       local sock = ngx.socket.tcp()
       sock:settimeout(30000)
@@ -128,13 +130,20 @@ user nobody $TEST_NGINX_NOBODY_GROUP;
       file:close()
       ngx.say("latest cert: " .. type(content))
 
-      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR -not -path '*ngrok.io*' -printf '%p %u %g %m\n' | sort")
+      local _, output, err = run_command("find $TEST_NGINX_RESTY_AUTO_SSL_DIR -not -path '*ngrok.io*' -printf '%p %u %g %m\n'")
       if err then
         ngx.say("failed to find file permissions: ", err)
         return nil, err
       end
       ngx.say("permissions:")
       output = string.gsub(output, "%s+$", "")
+      local lines, err = ngx_re.split(output, "\n")
+      if err then
+        ngx.say("failed to sort file permissions output ", err)
+        return nil, err
+      end
+      table.sort(lines)
+      output = table.concat(lines, "\n")
       output = string.gsub(output, " $TEST_NGINX_NOBODY_GROUP ", " nobody ")
       ngx.say(output)
     }
