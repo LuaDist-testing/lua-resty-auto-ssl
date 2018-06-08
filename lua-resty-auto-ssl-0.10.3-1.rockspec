@@ -1,16 +1,16 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "lua-resty-auto-ssl"
-version = "0.10.2-1"
+version = "0.10.3-1"
 -- LuaDist source
 source = {
-  tag = "0.10.2-1",
+  tag = "0.10.3-1",
   url = "git://github.com/LuaDist-testing/lua-resty-auto-ssl.git"
 }
 -- Original source
 -- source = {
 --   url = "git://github.com/GUI/lua-resty-auto-ssl.git",
---   tag = "v0.10.2",
+--   tag = "v0.10.3",
 -- }
 description = {
   summary = "Automatic SSL handling for OpenResty",
@@ -23,7 +23,19 @@ dependencies = {
 }
 build = {
   type = "make",
+  build_variables = {
+    CFLAGS="$(CFLAGS)",
+    LIBFLAG="$(LIBFLAG)",
+    LUA_LIBDIR="$(LUA_LIBDIR)",
+    LUA_BINDIR="$(LUA_BINDIR)",
+    LUA_INCDIR="$(LUA_INCDIR)",
+    LUA="$(LUA)",
+  },
   install_variables = {
+    INST_PREFIX="$(PREFIX)",
+    INST_BINDIR="$(BINDIR)",
+    INST_LIBDIR="$(LIBDIR)",
     INST_LUADIR="$(LUADIR)",
+    INST_CONFDIR="$(CONFDIR)",
   },
 }
