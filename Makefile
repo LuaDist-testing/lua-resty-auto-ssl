@@ -1,7 +1,7 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR?=$(ROOT_DIR)/build
 
-DEHYDRATED_VERSION:=v0.4.0
+DEHYDRATED_VERSION:=0bc0bd13d6abdc027c58bec12f7c2d3198d3a677
 LUA_RESTY_SHELL_VERSION:=955243d70506c21e7cc29f61d745d1a8a718994f
 SOCKPROC_VERSION:=fc8ad3f15a7b2cf2eaf39663b90010efc55e207c
 
@@ -28,6 +28,9 @@ install:
 	install -m 644 lib/resty/auto-ssl/init_master.lua $(INST_LUADIR)/resty/auto-ssl/init_master.lua
 	install -m 644 lib/resty/auto-ssl/init_worker.lua $(INST_LUADIR)/resty/auto-ssl/init_worker.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/jobs
+	install -d $(INST_LUADIR)/resty/auto-ssl/json_adapters
+	install -m 644 lib/resty/auto-ssl/json_adapters/cjson.lua $(INST_LUADIR)/resty/auto-ssl/json_adapters/cjson.lua
+	install -m 644 lib/resty/auto-ssl/json_adapters/dkjson.lua $(INST_LUADIR)/resty/auto-ssl/json_adapters/dkjson.lua
 	install -m 644 lib/resty/auto-ssl/jobs/renewal.lua $(INST_LUADIR)/resty/auto-ssl/jobs/renewal.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/servers
 	install -m 644 lib/resty/auto-ssl/servers/challenge.lua $(INST_LUADIR)/resty/auto-ssl/servers/challenge.lua
@@ -96,7 +99,10 @@ TEST_LUA_SHARE_DIR:=$(TEST_VENDOR_DIR)/share/lua/5.1
 TEST_LUA_LIB_DIR:=$(TEST_VENDOR_DIR)/lib/lua/5.1
 
 LUACHECK:=luacheck
-LUACHECK_VERSION:=0.19.1-1
+LUACHECK_VERSION:=0.21.2-1
+
+DKJSON:=dkjson
+DKJSON_VERSION:=2.5-2
 
 OPENSSL_VERSION:=1.0.2k
 OPENSSL:=openssl-$(OPENSSL_VERSION)
@@ -131,6 +137,9 @@ $(TEST_VENDOR_DIR):
 
 $(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION): $(TEST_TMP_DIR)/stamp-$(LUAROCKS) | $(TEST_VENDOR_DIR)
 	$(call test_luarocks_install,LUACHECK)
+
+$(TEST_LUAROCKS_DIR)/$(DKJSON)/$(DKJSON_VERSION): $(TEST_TMP_DIR)/stamp-$(LUAROCKS) | $(TEST_VENDOR_DIR)
+	$(call test_luarocks_install,DKJSON)
 
 $(TEST_TMP_DIR)/cpanm: | $(TEST_TMP_DIR)
 	curl -o $@ -L http://cpanmin.us
@@ -193,6 +202,7 @@ $(TEST_TMP_DIR)/stamp-$(LUAROCKS): $(TEST_TMP_DIR)/stamp-$(OPENRESTY) | $(TEST_T
 
 test_dependencies: \
 	$(TEST_LUAROCKS_DIR)/$(LUACHECK)/$(LUACHECK_VERSION) \
+	$(TEST_LUAROCKS_DIR)/$(DKJSON)/$(DKJSON_VERSION) \
 	$(TEST_VENDOR_DIR)/$(NGROK)/ngrok \
 	$(TEST_TMP_DIR)/stamp-$(OPENRESTY) \
 	$(TEST_TMP_DIR)/stamp-$(LUAROCKS) \

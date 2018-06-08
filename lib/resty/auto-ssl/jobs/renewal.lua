@@ -68,9 +68,29 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     return
   end
 
+  ngx.log(ngx.NOTICE, "auto-ssl: checking certificate renewals for ", domain)
+
   -- Fetch the current certificate.
-  local fullchain_pem, _, cert_pem = storage:get_cert(domain)
-  if not fullchain_pem then
+  local cert, get_cert_err = storage:get_cert(domain)
+  if get_cert_err then
+    ngx.log(ngx.ERR, "auto-ssl: renewal error fetching certificate from storage for ", domain, ": ", get_cert_err)
+  end
+  if not cert then
+    cert = {}
+  end
+
+  -- Attempt to retrieve expiry date from storage. If it is not found try renewal.
+  -- If expiry date is found, we attempt renewal if it's within 30 days.
+  if cert["expiry"] then
+    local now = ngx.now()
+    if now + (30 * 24 * 60 * 60) < cert["expiry"] then
+      ngx.log(ngx.NOTICE, "auto-ssl: expiry date is more than 30 days out, skipping renewal: ", domain)
+      renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
+      return
+    end
+  end
+
+  if not cert["fullchain_pem"] then
     ngx.log(ngx.ERR, "auto-ssl: attempting to renew certificate for domain without certificates in storage: ", domain)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return
@@ -80,8 +100,8 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
   -- fullchain.pem). So for backwards compatibility, set the cert.pem value to
   -- the fullchain.pem value, since that should work for our date checking
   -- purposes.
-  if not cert_pem then
-    cert_pem = fullchain_pem
+  if not cert["cert_pem"] then
+    cert["cert_pem"] = cert["fullchain_pem"]
   end
 
   -- Write out the cert.pem value to the location dehydrated expects it for
@@ -100,14 +120,13 @@ local function renew_check_cert(auto_ssl_instance, storage, domain)
     renew_check_cert_unlock(domain, storage, local_lock, distributed_lock_value)
     return false, err
   end
-  file:write(cert_pem)
+  file:write(cert["cert_pem"])
   file:close()
 
   -- Trigger a normal certificate issuance attempt, which dehydrated will
   -- skip if the certificate already exists or renew if it's within the
   -- configured time for renewals.
-  ngx.log(ngx.NOTICE, "auto-ssl: checking certificate renewals for ", domain)
-  local _, _, issue_err = ssl_provider.issue_cert(auto_ssl_instance, domain)
+  local _, issue_err = ssl_provider.issue_cert(auto_ssl_instance, domain)
   if issue_err then
     ngx.log(ngx.ERR, "auto-ssl: issuing renewal certificate failed: ", err)
   end
@@ -117,7 +136,7 @@ end
 
 local function renew_all_domains(auto_ssl_instance)
   -- Loop through all known domains and check to see if they should be renewed.
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   local domains, domains_err = storage:all_cert_domains()
   if domains_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to fetch all certificate domains: ", domains_err)

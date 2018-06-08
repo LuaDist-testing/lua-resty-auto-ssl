@@ -25,10 +25,10 @@ return function(auto_ssl_instance)
   -- background process, which would be nice.
   start_sockproc()
 
-  local storage = auto_ssl_instance:get("storage")
-  local adapter = storage.adapter
-  if adapter.setup_worker then
-    adapter:setup_worker()
+  local storage = auto_ssl_instance.storage
+  local storage_adapter = storage.adapter
+  if storage_adapter.setup_worker then
+    storage_adapter:setup_worker()
   end
 
   renewal_job.spawn(auto_ssl_instance)

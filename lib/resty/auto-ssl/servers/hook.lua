@@ -17,7 +17,7 @@ return function(auto_ssl_instance)
   end
 
   local path = ngx.var.request_uri
-  local storage = auto_ssl_instance:get("storage")
+  local storage = auto_ssl_instance.storage
   if path == "/deploy-challenge" then
     assert(params["domain"])
     assert(params["token_filename"])
@@ -39,7 +39,8 @@ return function(auto_ssl_instance)
     assert(params["domain"])
     assert(params["fullchain"])
     assert(params["privkey"])
-    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"], params["cert"])
+    assert(params["expiry"])
+    local _, err = storage:set_cert(params["domain"], params["fullchain"], params["privkey"], params["cert"], tonumber(params["expiry"]))
     if err then
       ngx.log(ngx.ERR, "auto-ssl: failed to set cert: ", err)
       return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
