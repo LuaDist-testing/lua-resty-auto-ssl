@@ -8,13 +8,13 @@ local function convert_to_der_and_cache(domain, fullchain_pem, privkey_pem, newl
   -- Convert certificate from PEM to DER format.
   local fullchain_der, fullchain_der_err = ssl.cert_pem_to_der(fullchain_pem)
   if not fullchain_der or fullchain_der_err then
-    return nil, nil, "failed to convert certificate chain from PEM to DER: " .. (fullchain_der_err or "")
+    return nil, nil, newly_issued, "failed to convert certificate chain from PEM to DER: " .. (fullchain_der_err or "")
   end
 
   -- Convert private key from PEM to DER format.
   local privkey_der, privkey_der_err = ssl.priv_key_pem_to_der(privkey_pem)
   if not privkey_der or privkey_der_err then
-    return nil, nil, "failed to convert private key from PEM to DER: " .. (privkey_der_err or "")
+    return nil, nil, newly_issued, "failed to convert private key from PEM to DER: " .. (privkey_der_err or "")
   end
 
   -- Cache DER formats in memory for 1 hour (so renewals will get picked up
@@ -225,7 +225,7 @@ local function set_cert(auto_ssl_instance, domain, fullchain_der, privkey_der, n
   end
 end
 
-return function(auto_ssl_instance, ssl_options)
+local function do_ssl(auto_ssl_instance, ssl_options)
   -- Determine the domain making the SSL request with SNI.
   local request_domain = auto_ssl_instance:get("request_domain")
   local domain, domain_err = request_domain(ssl, ssl_options)
@@ -246,6 +246,9 @@ return function(auto_ssl_instance, ssl_options)
   if get_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: could not get certificate for ", domain, " - using fallback - ", get_cert_err)
     return
+  elseif not fullchain_der or not privkey_der then
+    ngx.log(ngx.ERR, "auto-ssl: certificate data unexpectedly missing for ", domain, " - using fallback")
+    return
   end
 
   -- Set the certificate on the response.
@@ -253,5 +256,12 @@ return function(auto_ssl_instance, ssl_options)
   if set_cert_err then
     ngx.log(ngx.ERR, "auto-ssl: failed to set certificate for ", domain, " - using fallback - ", set_cert_err)
     return
+  end
+end
+
+return function(auto_ssl_instance, ssl_options)
+  local ok, err = pcall(do_ssl, auto_ssl_instance, ssl_options)
+  if not ok then
+    ngx.log(ngx.ERR, "auto-ssl: failed to run do_ssl: ", err)
   end
 end
