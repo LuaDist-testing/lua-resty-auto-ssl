@@ -5,6 +5,10 @@ LETSENCRYPT_SH_VERSION:=afabfff06e2dece1772ed788ac41ca0d297ab49b
 LUA_RESTY_SHELL_VERSION:=0f88be3272c703686ef0d37f267f0616672c6931
 SOCKPROC_VERSION:=0aa4db08f299dcc9b6c00afad028d0e2678c95b0
 
+RUNTIME_DEPENDENCIES:=bash curl diff grep mktemp openssl sed
+$(foreach bin,$(RUNTIME_DEPENDENCIES),\
+	$(if $(shell command -v $(bin) 2> /dev/null),,$(error `$(bin)` was not found in PATH. Please install `$(bin)` first)))
+
 .PHONY:
 	all \
 	grind \
@@ -191,13 +195,14 @@ lint: test_dependencies
 test: test_dependencies lint
 	sudo mkdir -p /tmp/resty-auto-ssl-test-worker-perms
 	sudo chown nobody /tmp/resty-auto-ssl-test-worker-perms
-	sudo rm -rf $(ROOT_DIR)/t/servroot*
+	sudo rm -rf $(ROOT_DIR)/t/servroot* $(ROOT_DIR)/t/logs
+	mkdir -p $(ROOT_DIR)/t/logs
 	PATH=$(PATH) luarocks make ./lua-resty-auto-ssl-git-1.rockspec
 	pkill sockproc || true
 	sudo pkill -U nobody sockproc || true
-	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(ROOT_DIR)/t/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove t/worker_file_permissions.t
+	sudo env TEST_NGINX_RESTY_AUTO_SSL_DIR=/tmp/resty-auto-ssl-test-worker-perms TEST_NGINX_SERVROOT=$(ROOT_DIR)/t/servroot-worker-perms PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(ROOT_DIR)/t/logs/error-worker-perms.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove t/worker_file_permissions.t
 	sudo pkill -U nobody sockproc || true
-	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
+	PATH=$(PATH) PERL5LIB=$(TEST_BUILD_DIR)/lib/perl5 TEST_NGINX_ERROR_LOG=$(ROOT_DIR)/t/logs/error.log TEST_NGINX_RESOLVER=$(TEST_NGINX_RESOLVER) prove `find $(ROOT_DIR)/t -maxdepth 1 -name "*.t" -not -name "worker_file_permissions.t"`
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 TEST_NGINX_SLEEP=5 $(MAKE) test

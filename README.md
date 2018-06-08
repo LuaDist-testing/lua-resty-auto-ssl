@@ -24,6 +24,8 @@ Requirements:
   - Or nginx built with [ngx_lua](https://github.com/openresty/lua-nginx-module#installation) 0.10.0 or higher
 - OpenSSL 1.0.2e or higher
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
+- bash, curl, diff, grep, mktemp, sed (these are generally pre-installed on most systems, but may not be included in some minimal containers)
+
 
 ```sh
 $ sudo luarocks install lua-resty-auto-ssl
@@ -173,7 +175,12 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 - **`redis`**
   *Default:* `{ host = "127.0.0.1", port = 6379 }`
 
-  If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts `host`, `port`, and `socket` (for unix socket paths) options.
+  If the `redis` storage adapter is being used, then additional connection options can be specified on this table. Accepts the following options:
+
+  - `host`
+  - `port`
+  - `socket` (for unix socket paths)
+  - `auth`
 
   *Example:*
 
