@@ -1,9 +1,9 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR:=$(ROOT_DIR)/build
 
-LETSENCRYPT_SH_VERSION:=afabfff06e2dece1772ed788ac41ca0d297ab49b
-LUA_RESTY_SHELL_VERSION:=0f88be3272c703686ef0d37f267f0616672c6931
-SOCKPROC_VERSION:=0aa4db08f299dcc9b6c00afad028d0e2678c95b0
+DEHYDRATED_VERSION:=v0.3.1
+LUA_RESTY_SHELL_VERSION:=955243d70506c21e7cc29f61d745d1a8a718994f
+SOCKPROC_VERSION:=fc8ad3f15a7b2cf2eaf39663b90010efc55e207c
 
 RUNTIME_DEPENDENCIES:=bash curl diff grep mktemp openssl sed
 $(foreach bin,$(RUNTIME_DEPENDENCIES),\
@@ -18,7 +18,7 @@ $(foreach bin,$(RUNTIME_DEPENDENCIES),\
 	test_dependencies
 
 all: \
-	$(BUILD_DIR)/stamp-letsencrypt.sh-$(LETSENCRYPT_SH_VERSION) \
+	$(BUILD_DIR)/stamp-dehydrated-$(DEHYDRATED_VERSION) \
 	$(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION) \
 	$(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION)
 
@@ -47,17 +47,17 @@ install:
 	install -m 644 lib/resty/auto-ssl/utils/start_sockproc.lua $(INST_LUADIR)/resty/auto-ssl/utils/start_sockproc.lua
 	install -m 644 lib/resty/auto-ssl/utils/run_command.lua $(INST_LUADIR)/resty/auto-ssl/utils/run_command.lua
 	install -d $(INST_LUADIR)/resty/auto-ssl/vendor
-	install -m 755 lib/resty/auto-ssl/vendor/letsencrypt.sh $(INST_LUADIR)/resty/auto-ssl/vendor/letsencrypt.sh
+	install -m 755 lib/resty/auto-ssl/vendor/dehydrated $(INST_LUADIR)/resty/auto-ssl/vendor/dehydrated
 	install -m 644 lib/resty/auto-ssl/vendor/shell.lua $(INST_LUADIR)/resty/auto-ssl/vendor/shell.lua
 	install -m 755 lib/resty/auto-ssl/vendor/sockproc $(INST_LUADIR)/resty/auto-ssl/vendor/sockproc
 
 $(BUILD_DIR):
 	mkdir -p $@
 
-$(BUILD_DIR)/stamp-letsencrypt.sh-$(LETSENCRYPT_SH_VERSION): | $(BUILD_DIR)
-	rm -f $(BUILD_DIR)/stamp-letsencrypt.sh-*
-	curl -sSLo $(ROOT_DIR)/lib/resty/auto-ssl/vendor/letsencrypt.sh "https://raw.githubusercontent.com/lukas2511/letsencrypt.sh/$(LETSENCRYPT_SH_VERSION)/letsencrypt.sh"
-	chmod +x $(ROOT_DIR)/lib/resty/auto-ssl/vendor/letsencrypt.sh
+$(BUILD_DIR)/stamp-dehydrated-$(DEHYDRATED_VERSION): | $(BUILD_DIR)
+	rm -f $(BUILD_DIR)/stamp-dehydrated-*
+	curl -sSLo $(ROOT_DIR)/lib/resty/auto-ssl/vendor/dehydrated "https://raw.githubusercontent.com/lukas2511/dehydrated/$(DEHYDRATED_VERSION)/dehydrated"
+	chmod +x $(ROOT_DIR)/lib/resty/auto-ssl/vendor/dehydrated
 	touch $@
 
 $(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION): | $(BUILD_DIR)
@@ -67,7 +67,7 @@ $(BUILD_DIR)/stamp-lua-resty-shell-$(LUA_RESTY_SHELL_VERSION): | $(BUILD_DIR)
 
 $(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 	rm -f $(BUILD_DIR)/stamp-sockproc-*
-	cd $(BUILD_DIR) && curl -sSLo sockproc-$(SOCKPROC_VERSION).tar.gz "https://github.com/GUI/sockproc/archive/$(SOCKPROC_VERSION).tar.gz"
+	cd $(BUILD_DIR) && curl -sSLo sockproc-$(SOCKPROC_VERSION).tar.gz "https://github.com/juce/sockproc/archive/$(SOCKPROC_VERSION).tar.gz"
 	cd $(BUILD_DIR) && tar -xf sockproc-$(SOCKPROC_VERSION).tar.gz
 	cd $(BUILD_DIR)/sockproc-$(SOCKPROC_VERSION) && make
 	cp $(BUILD_DIR)/sockproc-$(SOCKPROC_VERSION)/sockproc $(ROOT_DIR)/lib/resty/auto-ssl/vendor/sockproc
@@ -81,7 +81,7 @@ $(BUILD_DIR)/stamp-sockproc-$(SOCKPROC_VERSION): | $(BUILD_DIR)
 ifeq ("$(LUA_MODE)", "lua52")
 OPENRESTY_FLAGS:="--with-luajit-xcflags='-DLUAJIT_ENABLE_LUA52COMPAT'"
 else
-OPENRESTY_FLAGS:=""
+OPENRESTY_FLAGS:=
 endif
 
 TEST_BUILD_DIR:=$(ROOT_DIR)/t/build$(LUA_MODE)
@@ -95,7 +95,7 @@ PATH:=$(TEST_BUILD_DIR)/bin:$(TEST_BUILD_DIR)/nginx/sbin:$(TEST_BUILD_DIR)/luaji
 LUACHECK:=luacheck
 LUACHECK_VERSION:=0.15.1-1
 
-OPENSSL_VERSION:=1.0.2h
+OPENSSL_VERSION:=1.0.2j
 OPENSSL:=openssl-$(OPENSSL_VERSION)
 
 OPENRESTY_VERSION:=1.9.15.1

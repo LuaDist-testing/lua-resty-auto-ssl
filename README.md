@@ -24,6 +24,7 @@ Requirements:
   - Or nginx built with [ngx_lua](https://github.com/openresty/lua-nginx-module#installation) 0.10.0 or higher
 - OpenSSL 1.0.2e or higher
 - [LuaRocks](http://openresty.org/#UsingLuaRocks)
+- make (for initial install via LuaRocks)
 - bash, curl, diff, grep, mktemp, sed (these are generally pre-installed on most systems, but may not be included in some minimal containers)
 
 
@@ -181,6 +182,7 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
   - `port`
   - `socket` (for unix socket paths)
   - `auth`
+  - `prefix`
 
   *Example:*
 
@@ -240,11 +242,11 @@ Additional configuration options can be set on the `auto_ssl` instance that is c
 
 ## Credits
 
-**[letsencrypt.sh](https://github.com/lukas2511/letsencrypt.sh)** is the client used internally that does all the heavy lifting with Let's Encrypt.
+**[dehydrated](https://github.com/lukas2511/dehydrated)** is the client used internally that does all the heavy lifting with Let's Encrypt.
 
 ## TODO
 
 - Document and formalize the API for other storage adapters.
 - Open source the MongoDB storage adapter we're using in API Umbrella.
 - Add the ability to encrypt data at rest for any storage adapter (based on what we built for API Umbrella's MongoDB storage adapter).
-- We currently rely on [letsencrypt.sh](https://github.com/lukas2511/letsencrypt.sh) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/juce/lua-resty-shell) and [sockproc](https://github.com/juce/sockproc), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.
+- We currently rely on [dehydrated](https://github.com/lukas2511/dehydrated) as our Let's Encrypt client. It's called in a non-blocking fashion via [lua-resty-shell](https://github.com/juce/lua-resty-shell) and [sockproc](https://github.com/juce/sockproc), however it might be simpler to eventually replace this approach with a native OpenResty Let's Encrypt client someday.
